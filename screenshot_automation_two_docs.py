@@ -8,12 +8,31 @@ import os
 from datetime import datetime
 import sys
 import threading
+from pathlib import Path
 
-docxfile = r"C:\Users\lefte\Downloads\Screenshots_project\Snap-Save-URL-Screenshot-Automation(2-file-option)\shots_public.docx"
-docxfile2 = r"C:\Users\lefte\Downloads\Screenshots_project\Snap-Save-URL-Screenshot-Automation(2-file-option)\shots_restricted.docx"
-shotfile = r"C:\Users\lefte\Downloads\Screenshots_project\Snap-Save-URL-Screenshot-Automation(2-file-option)\shots\shot.png"
+home_dir = os.path.expanduser("~")
+default_docxfile = os.path.join(home_dir, "Downloads", "Screenshots_project", "Snap-Save-URL-Screenshot-Automation(2-file-option)", "shots_public.docx")
+default_docxfile2 = os.path.join(home_dir, "Downloads", "Screenshots_project", "Snap-Save-URL-Screenshot-Automation(2-file-option)", "shots_restricted.docx")
+shotfile = os.path.join(home_dir, "Downloads", "Screenshots_project", "Snap-Save-URL-Screenshot-Automation(2-file-option)", "shots\shot.png")
 
-# Ensure files exist and load as two separate Document objects
+# Default file paths
+#default_docxfile = r"C:\Users\lefte\Downloads\Screenshots_project\Snap-Save-URL-Screenshot-Automation(2-file-option)\shots_public.docx"
+#default_docxfile2 = r"C:\Users\lefte\Downloads\Screenshots_project\Snap-Save-URL-Screenshot-Automation(2-file-option)\shots_restricted.docx"
+#shotfile = r"C:\Users\lefte\Downloads\Screenshots_project\Snap-Save-URL-Screenshot-Automation(2-file-option)\shots\shot.png"
+
+# Ask user for optional custom file names
+custom_public = input(f"Please type a name for File 1 or press 'Enter' to use the default name (default: {os.path.basename(default_docxfile)}): ").strip()
+if custom_public and not custom_public.lower().endswith('.docx'):
+    custom_public += '.docx'
+
+custom_restricted = input(f"Please type a name for File 2 or press 'Enter' to use the default name (default: {os.path.basename(default_docxfile2)}): ").strip()
+if custom_restricted and not custom_restricted.lower().endswith('.docx'):
+    custom_restricted += '.docx'
+
+docxfile = os.path.join(os.path.dirname(default_docxfile), custom_public) if custom_public else default_docxfile
+docxfile2 = os.path.join(os.path.dirname(default_docxfile2), custom_restricted) if custom_restricted else default_docxfile2
+
+# Ensure files exist and load as Document objects
 if not os.path.exists(docxfile):
     doc_public = Document()
     doc_public.save(docxfile)
@@ -38,13 +57,14 @@ def do_cap1():
 
     keyboard.press_and_release('ctrl+l')
     time.sleep(1)
+    pyperclip.copy("")  # Clear clipboard before grabbing URL
     keyboard.press_and_release('ctrl+c')
     time.sleep(1)
     url = pyperclip.paste()
     print(f"--------------Captured URL: {url}")
     doc_public.add_paragraph(f"Captured URL: {url}")
     doc_public.save(docxfile)
-    print('Screenshot and URL saved and appended to PUBLIC docx.')
+    print(f'Screenshot and URL saved and appended to {os.path.basename(docxfile)}.')
 
 
 def do_cap2():
@@ -56,13 +76,14 @@ def do_cap2():
 
     keyboard.press_and_release('ctrl+l')
     time.sleep(1)
+    pyperclip.copy("")  # Clear clipboard before grabbing URL
     keyboard.press_and_release('ctrl+c')
     time.sleep(1)
     url = pyperclip.paste()
     print(f"--------------Captured URL: {url}")
     doc_restricted.add_paragraph(f"Captured URL: {url}")
     doc_restricted.save(docxfile2)
-    print('Screenshot and URL saved and appended to RESTRICTED docx.')
+    print(f'Screenshot and URL saved and appended to {os.path.basename(docxfile2)}.')
 
 
 def input_listener():
@@ -74,16 +95,18 @@ def input_listener():
             keyboard.unhook_all_hotkeys()
 
 
+# Hotkeys
 keyboard.add_hotkey('ctrl+q', do_cap1)
 keyboard.add_hotkey('ctrl+y', do_cap2)
 
-print("Script running. Press Ctrl+Q to take screenshot and grab URL (public).")
+print("\nScript running. Press Ctrl+Q to take screenshot and grab URL (public).")
 print("Script running. Press Ctrl+Y to take screenshot and grab URL (restricted).")
 print("Type 'exit' (without quotes) and press Enter to exit safely.")
 
+# Start input listener in a separate thread
 threading.Thread(target=input_listener, daemon=True).start()
 
-# Replace keyboard.wait() with loop, checking exit_flag
+# Main loop to keep script alive
 while not exit_flag.is_set():
     time.sleep(0.1)  # Short sleep to reduce CPU use
 
